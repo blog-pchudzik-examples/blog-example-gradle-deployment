@@ -1,0 +1,84 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group = 'com.pchudzik.blog.example.gradledeployment'
+version = '1.0-SNAPSHOT'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    api 'org.apache.commons:commons-collections4:4.2'
+    implementation 'org.apache.commons:commons-lang3:3.5'
+    testImplementation 'org.spockframework:spock-core:1.2-groovy-2.5'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    classifier = 'javadoc'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact sourcesJar
+            artifact javadocJar
+
+            from components.java
+
+            pom {
+                name = 'Sample project that can be deployed with gradle to nexus'
+                description = 'Detailed description of sample project that can be deployed with gradle to nexus'
+                url = 'http://www.example.com/library'
+                licenses {
+                    license {
+                        name = 'MIT'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Paweł Chudzik'
+                        email = 'pawel.chudzik@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://example.com/my-library.git'
+                    developerConnection = 'scm:git:ssh://example.com/my-library.git'
+                    url = 'http://example.com/my-library/'
+                }
+            }
+
+            repositories {
+                maven {
+                    def releasesRepoUrl = "http://localhost:8081/repository/maven-releases/"
+                    def snapshotsRepoUrl = "http://localhost:8081/repository/maven-snapshots/"
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                    credentials {
+                        username = System.getProperty("nexusUser")
+                        password = System.getProperty("nexusPassword")
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useGpgCmd()
+    sign publishing.publications.mavenJava
+}
